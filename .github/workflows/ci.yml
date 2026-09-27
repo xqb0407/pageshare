@@ -69,12 +69,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: 登录 Docker Hub（配了 secrets 才执行）
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' }}
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: 登录 Docker Hub（未配 secrets 则跳过）
+        # 注意：step 级 if 表达式拿不到 secrets 上下文，条件放进 shell 判断里
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "$DH_USER" ] || [ -z "$DH_TOKEN" ]; then
+            echo "未配置 Docker Hub secrets，本次只发 ghcr"; exit 0
+          fi
+          echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin
       - name: 汇总目标镜像名
         id: imgs
         env:
