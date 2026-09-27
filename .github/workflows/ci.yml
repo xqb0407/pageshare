@@ -49,3 +49,59 @@ jobs:
           cp dist/sha256sums.txt /tmp/sha256sums.txt
           gh release create "$GITHUB_REF_NAME" dist/pageshare-* /tmp/sha256sums.txt \
             --title "pageshare $GITHUB_REF_NAME" --generate-notes
+
+  publish-image:
+    # 打 tag 即发多架构镜像（amd64+arm64）：ghcr 零配置（用 Actions 内置 GITHUB_TOKEN）；
+    # Docker Hub 需在仓库 Settings→Secrets 配 DOCKERHUB_USERNAME / DOCKERHUB_TOKEN，缺了自动跳过。
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: 登录 GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: 登录 Docker Hub（配了 secrets 才执行）
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: 汇总目标镜像名
+        id: imgs
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          {
+            echo "images<<EOF"
+            echo "ghcr.io/xqb0407/pageshare"
+            [ -n "$DH_USER" ] && echo "$DH_USER/pageshare"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: 生成标签（<version> / <major>.<minor> / latest）
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.imgs.outputs.images }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+      - name: 构建并推送
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}

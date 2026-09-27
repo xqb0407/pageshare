@@ -4,11 +4,13 @@
 
 FROM golang:1.26-alpine AS build
 WORKDIR /src
+# 版本号由 CI 传 --build-arg VERSION=<tag>；与 scripts/release.sh 注入同一个 main.version
+ARG VERSION=dev
 # 先只拷依赖清单，源码改动不击穿 module 缓存层
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/pageshare ./cmd/pageshare
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/pageshare ./cmd/pageshare
 
 FROM alpine:3.20
 # ca 证书：出网请求 S3/R2 必需；tzdata：日志/过期时间本地化

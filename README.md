@@ -217,6 +217,16 @@ API：`GET /api/v1/mcp/sessions`（管理 token 鉴权）。同站并发发布�
 ./deploy.sh update|stop|logs|status|down    # 其余子命令
 ```
 
+不想本地构建时，用发布好的多架构镜像（linux/amd64 + arm64，打 tag 由 CI 自动推）：
+
+```bash
+PS_IMAGE=ghcr.io/xqb0407/pageshare:latest docker compose up -d
+# 或裸跑：
+docker run -d -p 8300:8300 -v pageshare-data:/data \
+  -e PS_AUTH_TOKEN=... -e PS_COOKIE_SECRET=... \
+  ghcr.io/xqb0407/pageshare:latest
+```
+
 手工方式（想自己管 `.env` 时）：
 
 ```bash
@@ -252,6 +262,11 @@ SQLite/JSON 元数据按 `db_path` 落盘；TTL 过期站点由后台每小时�
 linux/amd64、linux/arm64、darwin/arm64、darwin/amd64、windows/amd64——
 每个包内含二进制、README、LICENSE、示例配置，附 `sha256sums.txt`。
 `pageshare -version` 打印构建注入的版本号。
+
+推送 tag（`git tag v1.2.3 && git push origin v1.2.3`）后 CI 全自动：Release 挂全平台包，
+并把多架构镜像发到 `ghcr.io/xqb0407/pageshare`（`<version>` / `<major>.<minor>` / `latest` 三个标签）。
+要同时发 Docker Hub，在仓库 Settings→Secrets 配 `DOCKERHUB_USERNAME` 与 `DOCKERHUB_TOKEN`
+（Personal Access Token，Read/write）即可，未配置则自动跳过该 registry。
 
 `go install` 或本地跑法见上文「构建」；纯 Go 依赖（modernc SQLite、AWS SDK）意味着任何
 能跑 Go 的架构一条命令交叉编译，无需目标平台工具链。

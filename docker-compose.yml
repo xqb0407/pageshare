@@ -10,7 +10,9 @@
 services:
   pageshare:
     build: .
-    image: pageshare:latest
+    # 默认本地构建；想用官方预构建镜像：
+    #   PS_IMAGE=ghcr.io/xqb0407/pageshare:latest docker compose up -d
+    image: ${PS_IMAGE:-pageshare:latest}
     restart: unless-stopped
     ports:
       - "${PS_LISTEN_PORT:-8300}:8300"
