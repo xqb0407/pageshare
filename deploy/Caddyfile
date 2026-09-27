@@ -1,0 +1,22 @@
+# 配 docker-compose --profile tls 使用：把两处 example.com 换成你的域名，
+# 并按邮箱开启 ACME 正式证书（现在这行 email 是占位）。
+# 前提：share.example.com 与 *.s.share.example.com 都已 A/AAAA 记录到本机。
+
+{
+	email you@example.com
+}
+
+# 管理/分享/API 面
+share.example.com {
+	reverse_proxy pageshare:8300
+}
+
+# 泛分享子域：每个站点自己的域名。on_demand 按需签证书，
+# 是否放行由 pageshare 的 /domain-ask（站点存在才发证书）裁决。
+*.s.share.example.com {
+	tls {
+		on_demand
+		ask http://pageshare:8300/domain-ask
+	}
+	reverse_proxy pageshare:8300
+}

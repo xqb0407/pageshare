@@ -1,0 +1,18 @@
+{
+  "listen": "127.0.0.1:8300",
+  "public_base_url": "https://share.你的域名.com",
+  "site_wildcard_host": "s.share.你的域名.com",
+  "auth_token": "把这里换成 openssl rand -hex 16 生成的固定值",
+  "cookie_secret": "把这里换成 openssl rand -hex 32 生成的固定值",
+  "db_path": "sites.json",
+  "max_upload_mb": 100,
+  "versions_kept": 3,
+  "storage": {
+    "backend": "s3",
+    "endpoint": "https://你的Cloudflare账户ID.r2.cloudflarestorage.com",
+    "region": "auto",
+    "bucket": "pageshare",
+    "access_key_id": "R2 API Token 的 Access Key ID",
+    "secret_access_key": "R2 API Token 的 Secret Access Key"
+  }
+}

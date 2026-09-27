@@ -1,0 +1,29 @@
+# Go
+/pageshare
+*.test
+
+# 真实配置（含凭据）：只提交 pageshare.example.json / .env.example
+pageshare*.json
+pageshare.json
+!pageshare.example.json
+.env
+.env.*
+!.env.example
+
+# 运行时产物（任意目录）：元数据、SQLite、审计日志
+sites.json
+*.db
+*.db-shm
+*.db-wal
+audit.jsonl*
+/data/
+
+# 发布构建产物
+/dist/
+
+# 前端
+frontend/node_modules/
+
+# macOS
+.DS_Store
+__MACOSX/

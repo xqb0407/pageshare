@@ -1,0 +1,23 @@
+# 镜像构建只需要 Go 源码 + go:embed 的 web/dist；其余全部排除，缓存更稳
+.git
+.github
+frontend
+docs
+dist
+*.md
+LICENSE
+Dockerfile
+docker-compose.yml
+.env
+.env.*
+
+# 运行时/测试产物（embed 资产 internal/server/web/dist 不在排除之列）
+sites.json
+*.db
+*.db-shm
+*.db-wal
+audit.jsonl*
+pageshare*.json
+!pageshare.example.json
+/data
+/pageshare

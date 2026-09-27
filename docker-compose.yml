@@ -1,0 +1,61 @@
+# pageshare 生产部署骨架：
+#   cp .env.example .env && 填好密钥 && docker compose up -d --build
+# 要 TLS/域名（泛分享子域 on_demand 签证书）：
+#   docker compose --profile tls up -d   （域名与证书邮箱在 deploy/Caddyfile 里改）
+#
+# 存储说明：默认 disk 后端（数据全进 pageshare-data 卷，开箱即用）；
+# 生产推荐 S3/R2 —— .env 里填 PS_STORAGE_BACKEND=s3 与 PS_S3_* 五项即可，
+# 桶保持私有，presigned 跳转对访问者仍透明。
+
+services:
+  pageshare:
+    build: .
+    image: pageshare:latest
+    restart: unless-stopped
+    ports:
+      - "${PS_LISTEN_PORT:-8300}:8300"
+    environment:
+      PS_AUTH_TOKEN: ${PS_AUTH_TOKEN:?必填——openssl rand -hex 16}
+      PS_COOKIE_SECRET: ${PS_COOKIE_SECRET:?必填——openssl rand -hex 32}
+      PS_PUBLIC_BASE_URL: ${PS_PUBLIC_BASE_URL:-http://localhost:8300}
+      PS_SITE_WILDCARD_HOST: ${PS_SITE_WILDCARD_HOST:-}
+      PS_VERSIONS_KEPT: ${PS_VERSIONS_KEPT:-3}
+      # 元数据与 MCP 审计（audit.jsonl）都落卷内
+      PS_DB_PATH: /data/sites.json
+      PS_STORAGE_BACKEND: ${PS_STORAGE_BACKEND:-disk}
+      PS_STORAGE_ROOT: /data/storage
+      PS_S3_ENDPOINT: ${PS_S3_ENDPOINT:-}
+      PS_S3_REGION: ${PS_S3_REGION:-auto}
+      PS_S3_BUCKET: ${PS_S3_BUCKET:-}
+      PS_S3_ACCESS_KEY_ID: ${PS_S3_ACCESS_KEY_ID:-}
+      PS_S3_SECRET_ACCESS_KEY: ${PS_S3_SECRET_ACCESS_KEY:-}
+      PS_S3_PREFIX: ${PS_S3_PREFIX:-}
+    volumes:
+      - pageshare-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8300/healthz"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      # 用途：观测 + `docker compose up -d --wait` 门禁；restart: unless-stopped 负责拉活
+
+  # 可选：Caddy TLS 反代（含泛域名 on_demand 证书，ask 回源 /domain-ask）
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["tls"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      pageshare:
+        condition: service_healthy
+
+volumes:
+  pageshare-data:
+  caddy-data:
+  caddy-config:

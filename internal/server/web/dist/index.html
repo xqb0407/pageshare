@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pageshare · 管理页</title>
+    <script>
+      // 主题先行：避免首帧闪错色（管理页无宿主桥，本地偏好 + 手动切换）
+      (function () {
+        var saved = localStorage.getItem("ps.theme");
+        var theme = saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    <script type="module" crossorigin src="/admin/assets/index-B1LQg27F.js"></script>
+    <link rel="stylesheet" crossorigin href="/admin/assets/index-C75vAsu_.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
